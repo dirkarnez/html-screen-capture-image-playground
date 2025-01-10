@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+
+<h1>This is a Heading</h1>
+<p>This is a paragraph.</p>
+
+<script>
+async function startCapture(displayMediaOptions) {
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+    return stream;
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
+async function captureImage(displayMediaOptions) {
+  const stream = await startCapture(displayMediaOptions);
+  if (!stream) {
+    return null;
+  }
+
+  const video = document.createElement('video');
+  video.srcObject = stream;
+
+  return new Promise((resolve, reject) => {
+    video.onloadedmetadata = async () => {
+      video.play();
+
+      // Wait for the video to start playing
+      await new Promise((r) => setTimeout(r, 500)); 
+
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Stop the video stream
+      stream.getTracks().forEach(track => track.stop());
+
+      // Get the image data from the canvas
+      const imageDataUrl = canvas.toDataURL('image/png');
+      resolve(imageDataUrl);
+    };
+
+    video.onerror = (err) => {
+      reject(err);
+    };
+  });
+}
+
+// Usage example:
+const displayMediaOptions = { video: true };
+captureImage(displayMediaOptions).then((imageDataUrl) => {
+  if (imageDataUrl) {
+    console.log('Captured image data URL:', imageDataUrl);
+    const img = document.createElement('img');
+    img.src = imageDataUrl;
+    document.body.appendChild(img); // Append the image to the document body
+  } else {
+    console.error('Failed to capture image.');
+  }
+});
+</script>
+</body>
+</html>
+
+
